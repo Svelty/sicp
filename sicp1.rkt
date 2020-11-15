@@ -14,7 +14,7 @@
 
 ; This is a comment
 ; 1.2
-(/ (+ 5 4 (- 2 (- 3 (+ 6 (/ 4 5))))) (* 3 (- 6 2) (- 2 7)))
+;; (/ (+ 5 4 (- 2 (- 3 (+ 6 (/ 4 5))))) (* 3 (- 6 2) (- 2 7)))
 
 ;1.3
 (define (max-sum-of-squares x y z)
@@ -52,8 +52,8 @@
         (else else-clause)))
 
 ;1.7
-(sqrt 0.001)
-(square (sqrt 0.001))
+;; (sqrt 0.001)
+;; (square (sqrt 0.001))
 ;(sqrt 900000000000000000)
 ;(square (sqrt 900000000000000000))
 
@@ -291,7 +291,93 @@
 ;; Excercie 1.13
 ;; phi = (1 + root(5))/2
 ;; (define (phi (/ (+ 1 (sqrt 5)) 2)))
-(define sqrt5 (sqrt 5))
-(define phi (/ (+ 1 sqrt5) 2))
-(define psi (/ (- 1 sqrt5) 2))
+;; (define sqrt5 (sqrt 5))
+;; (define phi (/ (+ 1 sqrt5) 2))
+;; (define psi (/ (- 1 sqrt5) 2))
+;; See paper notes for proof
 
+;; 1.14 paper notes
+
+;; 1.15
+(define (cube x) (* x x x))
+
+(define (p x) (- (* 3 x) (* 4 (cube x))))
+
+(define (sine angle)
+  (if (not (> (abs angle) 0.1))
+      angle
+      (p (sine (/ angle 3.0)))))
+
+;; a
+(define (howManyPs angle count)
+  (if (not (> (abs angle) 0.1))
+      count
+      (howManyPs (/ angle 3.0) (+ 1 count))))
+
+;; (howManyPs 12.15 0)
+
+;; b
+;; (howManyPs 24.3 0)
+;; (howManyPs 36.45 0)
+;; (howManyPs 50 0)
+
+;; Theta = log n (base 3) because angle is reduced at n/3
+
+;;1.2.4 Exponentiation
+
+;; (define (expt b n)
+;;   (if (= n 0)
+;;       1
+;;       (* b (expt b (- n 1)))))
+
+(define (expt b n)
+  (expt-iter b n 1))
+
+(define (expt-iter b counter product)
+  (if (= counter 0)
+      product
+      (expt-iter b
+                 (- counter 1)
+                 (* b product))))
+
+(define (fast-expt b n)
+  (cond ((= n 0) 1)
+        ((even? n) (square (fast-expt b (/ n 2))))
+        (else (* b (fast-expt b (- n 1))))))
+
+
+;; 1.16 bove definition is recursive, design an iterative exponentiation process
+;; Hint:(b^(n/2))^2 = (b^2)^(n/2) keep state var a such that ab^n is constant between states
+;; at the beginign of the process a = 1
+
+(define (fast-iter-expt b n)
+  (fast-iter-expt-iter b n 1))
+
+(define (fast-iter-expt-iter b n a)
+  (cond ((= n 0) a)
+        ((even? n) (fast-iter-expt-iter (square b) (/ n 2) a))
+        (else (fast-iter-expt-iter b (- n 1) (* a b)))))
+
+
+;; 1.17
+(define (mult a b)
+  (define (double x)
+    (+ x x))
+  (define (half x)
+    (/ x 2))
+  (cond ((= b 0) 0)
+        ((even? b) (mult (double a) (half b)))
+        (else (+ a (mult a (- b 1))))))
+
+
+(define (mult-it a b)
+  (mult-iter a b 0))
+
+(define (mult-iter a b n)
+  (define (double x)
+    (+ x x))
+  (define (half x)
+    (/ x 2))
+  (cond ((= b 0) n)
+        ((even? b) (mult-iter (double a) (half b) n))
+        (else (mult-iter a (- b 1) (+ n a)))))
