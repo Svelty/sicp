@@ -369,7 +369,7 @@
         ((even? b) (mult (double a) (half b)))
         (else (+ a (mult a (- b 1))))))
 
-
+;; 1.18
 (define (mult-it a b)
   (mult-iter a b 0))
 
@@ -381,3 +381,180 @@
   (cond ((= b 0) n)
         ((even? b) (mult-iter (double a) (half b) n))
         (else (mult-iter a (- b 1) (+ n a)))))
+
+
+;; 1.19 (pg47)
+(define (fast-fib n)
+  (fib-iterr 1 0 0 1 n))
+
+(define (fib-iterr a b p q count)
+  (cond ((= count 0) b)
+        ((even? count)
+         (fib-iterr a
+                   b
+                   (+ (square p) (square q))
+                   (+ (* 2 p q) (square q))
+                   (/ count 2)))
+        (else (fib-iterr (+ (* b q) (* a q) (* a p ))
+                        (+ (* b p) (* a q))
+                        p
+                        q
+                        (- count 1)))))
+
+;;1.20
+;; Applicative
+;; (remainder 206 40)
+;; (remainder 40 6)
+;; (remainder 6 4)
+;; (remainder 4 2)
+;; (remainder 2 0)
+;;Normal order:
+;; (gcd 206 40)
+;; (gcd 40 (remainder 206 40))
+;; (gcd (remainder 206 40) (remainder 40 (remainder 206 40)))....
+
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (next test-divisor)))))
+
+(define (next x)
+  (if (= x 2) 3 (+ x 2)))
+
+
+(define (divides? a b )
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+;;Compute the remainder of the exponetial "exp" of a number "base" modulo another number "m"
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m))))
+
+;; (define (expmod base exp m)
+;;   (remainder (fast-expt base exp) m))
+
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod a n n ) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((fermat-test n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(smallest-divisor 199)
+(smallest-divisor 1999)
+(smallest-divisor 19999)
+
+;;1.22
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+
+(define (start-prime-test n start-time)
+  (if (fast-prime? n 10)
+      (report-prime (- (runtime) start-time))))
+
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+
+(define (search-for-primes b n)
+  (cond ((> b n) 0)
+        ((even? b) (search-for-primes (+ b 1) n))
+        (else
+         (timed-prime-test b)
+         (search-for-primes (+ b 2) n))))
+
+
+
+;;1009 *** 2
+;;1013 *** 1
+;;1019 *** 2
+
+;;10007 *** 5
+;;10009 *** 5
+;;10037 *** 5
+
+;;100003 *** 14
+;;100019 *** 14
+;;100043 *** 15
+
+;; 1000003 *** 41
+;; 1000033 *** 41
+;; 1000037 *** 41
+
+;;1.23
+
+
+;; 1009 *** 1
+;; 1013 *** 2
+;; 1019 *** 1
+
+;; 10007 *** 3
+;; 10009 *** 3
+;; 10037 *** 3
+
+;; 100003 *** 9
+;; 100019 *** 9
+;; 100043 *** 9
+
+;; 1000003 *** 28
+;; 1000033 *** 28
+;; 1000037 *** 28
+;;Number of steps is not the only factor in execution time.
+
+;; 1009 *** 8
+;; 1013 *** 8
+;; 1019 *** 7
+
+;; 10007 *** 12
+;; 10009 *** 12
+;; 10037 *** 12
+
+;; 100003 *** 39
+;; 100019 *** 20
+;; 100043 *** 22
+;; 100049 *** 14
+
+;; 1000003 *** 15
+;; 1000033 *** 15
+;; 1000037 *** 14
+
+;;1.25
+;;1.26
+;;Expmod will have to execute twice for each even... tree execution structure. Tree recursion as opposed to linear recursion
+;; (expmod a n n)
+
+;;1.27
+(define (carm? n)
+  (if (carm-loop n (- n 1))
+      (if (prime? n) false true)
+      (if (prime? n) true false)))
+
+(define (carm-loop n current)
+  (cond ((= current 0) true)
+        ((= current (expmod current n n)) (carm-loop n (- current 1)))
+        (else false)))
+
+;; 1.28 TODO
+;;Miller-Rabin test 
+
+
+;;Section 1.3
