@@ -558,3 +558,187 @@
 
 
 ;;Section 1.3
+;; 1.29
+
+;; Simposon's Rule: a method for numerical integration 
+;; integral between a and b for a function f is approximated as :
+
+;; h = (b-a)/n for some even integer n, and yk = f(a+kh)
+
+
+;; (define (sum-integers a b)
+;;   (if (> a b)
+;;       0
+;;       (+ a (sum-integers (+ a 1) b))))
+
+;; ;; (define (sum-cubes a b)
+;; ;;   (if (> a b)
+;; ;;       0
+;; ;;       (+ (cube a) (sum-cubes (+ a 1) b))))
+
+;; (define (pi-sum a b)
+;;   (if (> a b)
+;;       0
+;;       (+ (/ 1.0 (* a (+ a 2))) (pi-sum (+ a 4) b))))
+
+;; Method for summing the values of a given series
+;; a - b is the range of values to sum
+;; term is a function of a that computes the current value to be summed
+;; next is a fucntion of a that computes the next value of a to pass to sum
+(define (sum term a next b)
+  (if (> a b)
+      0
+      (+ (term a)
+         (sum term (next a) next b))))
+
+(define (inc n) (+ n 1))
+
+(define (sum-cubes a b)
+  (sum cube a inc b))
+
+(define (identity x) x)
+
+(define (sum-integers a b)
+  (sum identity a inc b))
+
+(define (pi-sum a b)
+  (define (pi-term x)
+    (/ 1.0 (* x (+ x 2))))
+  (define (pi-next x)
+    (+ x 4))
+  (sum pi-term a pi-next b))
+
+(define (integral f a b dx)
+  (define (add-dx x) (+ x dx))
+  (* (sum f (+ a (/ dx 2.0)) add-dx b)
+     dx))
+
+(define (simpson-integral f a b n)
+  (define h (/ (- b a) n))
+  (define (term k)
+    (define y (f (+ a (* k h))))
+    (if (or (= k 0) (= k n))
+        (* 1 y)
+        (if (even? k)
+            (* 4 y)
+            (* 2 y))))
+  (* (/ h 3.0) (sum term 0 inc n)))
+
+;; 1.30
+(define (sum-iter term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (+ (term a) result))))
+  (iter a 0))
+
+(define (sum-integers-iter a b)
+  (sum-iter identity a inc b))
+
+(define (sum-cubes-iter a b)
+  (sum-iter cube a inc b))
+
+;; 1.31
+(define (product term a next b)
+  (if (> a b)
+      1
+      (* (term a)
+         (product term (next a) next b))))
+
+(define (factorial a)
+  (product identity 1 inc a))
+
+(define (pi-prod a)
+  (define (pi-term x)
+    (if (odd? x)
+        (/ (+ x 1.0) (+ x 2.0))
+        (/ (+ x 2.0) (+ x 1.0))))
+  (* 4 (product pi-term 1 inc a)))
+
+(define (product-iter term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (* (term a) result))))
+  (iter a 1))
+
+(define (factorial-iter a)
+  (product-iter identity 1 inc a))
+
+;; 1.32
+(define (accumulate combiner null-value term a next b)
+  (if (> a b)
+      null-value
+      (combiner (term a) (accumulate combiner null-value term (next a) next b))))
+
+(define (acc-prod-factorial a)
+  (accumulate * 1 identity 1 inc a))
+
+(define (accumulate-iter combiner null-value term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (combiner (term a) result))))
+  (iter a null-value))
+
+(define (acc-iter-prod-factorial a)
+  (accumulate-iter * 1 identity 1 inc a))
+
+;; 1.33
+(define (filter-accumulate filt combiner null-value term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (if (filt  a)
+            (iter (next a) (combiner (term a) result))
+            (iter (next a) result))))
+  (iter a null-value))
+
+(define (sum-even a b)
+  (filter-accumulate even? + 0 identity a inc b))
+
+(define (sum-prime-squares a b)
+  (filter-accumulate prime? + 0 square a inc b))
+
+(define (prod-rel-primes n)
+  (define (valid? x)
+    (gcd-one? n x))
+  (filter-accumulate valid? * 1 identity 1 inc n))
+
+(define (gcd-one? x y)
+  (if (= 1 (gcd x y))
+      true
+      false))
+
+
+;; 1.3.2 Constructing Procedures Using Lambda
+
+;; (define (pi-sum-lambda a b)
+;;   (sum (lambda (x) (/ 1.0 (* x (+ x 2))))
+;;        a
+;;        (lambda (x) (+ x 4))
+;;        b))
+
+
+;; (define (integral-lamda f a b dx)
+;;   (* (sum f
+;;           (+ a (/ dx 2.0))
+;;           (lambda (x) (+ x dx))
+;;           b)
+;;      dx))
+
+;; ((lambda (x y z) (+ x y (square z ))) 1 2 3)
+
+;; (define (f x y)
+;;   (let ((a (+ 1 (* x y)))
+;;         (b (- 1 y)))
+;;     (+ (* x (square a))
+;;        (* y b)
+;;        (* a b))))
+
+;; 1.34
+;; (define (f g)
+;;   (g 2))
+
+;; Calling (f f) will cause an error because it will attempt to call (f 2) but f requires a procedure with an arity of 1
+
