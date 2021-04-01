@@ -34,19 +34,19 @@
   (/ (+ x y) 2))
 
 
-(define (sqrt x)
-  (define (sqrt-iter guess x)
-    (if (good-enough? guess x)
-        guess
-        (sqrt-iter (improve guess x)
-                   x)))
-  (define (good-enough? guess x)
-    (< (abs (- (square guess) x)) 0.001))
-  (define (improve guess x)
-    (average guess (/ x guess)))
-  (sqrt-iter 1.0 x))
+;; (define (sqrt x)
+;;   (define (sqrt-iter guess x)
+;;     (if (good-enough? guess x)
+;;         guess
+;;         (sqrt-iter (improve guess x)
+;;                    x)))
+;;   (define (good-enough? guess x)
+;;     (< (abs (- (square guess) x)) 0.001))
+;;   (define (improve guess x)
+;;     (average guess (/ x guess)))
+;;   (sqrt-iter 1.0 x))
 
-;1.6 If used in sqrt-iter instead of special form if will result in infinate method calls being made to evaluate (sqrt-iter (improve guessx) x), the third parameter passed to "if", due to applicative order execution
+;1.6 If used in sqrt-iter instead of special form if will result in infinite method calls being made to evaluate (sqrt-iter (improve guessx) x), the third parameter passed to "if", due to applicative order execution
 (define (new-if predicate then-clause else-clause)
   (cond (predicate then-clause)
         (else else-clause)))
@@ -456,9 +456,9 @@
         ((fermat-test n) (fast-prime? n (- times 1)))
         (else false)))
 
-(smallest-divisor 199)
-(smallest-divisor 1999)
-(smallest-divisor 19999)
+;; (smallest-divisor 199)
+;; (smallest-divisor 1999)
+;; (smallest-divisor 19999)
 
 ;;1.22
 (define (timed-prime-test n)
@@ -742,3 +742,183 @@
 
 ;; Calling (f f) will cause an error because it will attempt to call (f 2) but f requires a procedure with an arity of 1
 
+;; 1.3.3 Procedures as General Methods
+
+(define (root-search f neg-point pos-point)
+  (let ((midpoint (average neg-point pos-point)))
+    (if (close-enough? neg-point pos-point)
+        midpoint
+        (let ((test-value (f midpoint)))
+          (cond ((positive? test-value)
+                 (root-search f neg-point midpoint))
+                ((negative? test-value)
+                 (root-search f midpoint pos-point))
+                (else midpoint))))))
+
+(define (close-enough? x y)
+  (< (abs (- x y)) 0.001))
+
+(define (half-interval-method f a b)
+  (let ((a-value (f a))
+        (b-value (f b)))
+    (cond ((and (negative? a-value) (positive? b-value))
+           (root-search f a b))
+          ((and (negative? b-value) (positive? a-value))
+           (root-search f b a))
+          (else
+           (error "Values are of the same sign" a b)))))
+
+;; (half-interval-method sin 2.0 4.0)
+
+;; (half-interval-method (lambda (x) (- (* x x x) (* 2 x) 3))
+;;                       1.0
+;;                       2.0)
+
+(define tolerance 0.00001)
+
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (display guess)
+      (newline)
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+
+;; (fixed-point cos 1.0)
+;; (fixed-point (lambda (y) (+ (sin y) (cos y)))
+;;              1.0)
+
+;; (define (sqrt x)
+;;   (fixed-point (lambda (y) (/ x y))
+;;                1.0))
+;; This does not work as it is non-convergent
+;; Use average damping to aid convergence
+
+(define (fixed-point-sqrt x)
+  (fixed-point (lambda (y) (average y (/ x y)))
+               1.0))
+
+;;1.35
+;; x^2 = x + 1
+;; x = 1 + 1/x 
+;; (fixed-point (lambda (x) (+ 1 (/ 1.0 x))) 2)
+
+
+;;1.36
+;; (fixed-point (lambda (x) (/ (log 1000) (log x))) 2)
+;;35
+;; (fixed-point (lambda (x) (/ (+ (/ (log 1000) (log x)) x) 2)) 2)
+;;9
+
+;;1.37
+(define (cont-frac n d k)
+  (define (run n d k i)
+    (if (= i k)
+        (/ (n i) (d i))
+        (/ (n i) (+ (d i) (run n d k (+ 1 i))))))
+  (run n d k 1))
+
+;; (define (cont-frac n d k)
+;;   (if (= k 0)
+;;       (/)
+;;       ()))
+
+
+;; (cont-frac (lambda (x) 1.0)
+;;            (lambda (x) 1.0)
+;;            11)
+
+(define (cont-frac-iter n d k)
+  (define (run i acc)
+    (if (= 0 i)
+        acc
+        (run (- i 1) (/ (n i) (+ (d i) acc)))))
+  (run k 0.0))
+
+;; (cont-frac-iter (lambda (x) 1.0)
+;;            (lambda (x) 1.0)
+;;            11)
+;; 1.38
+(define (calc-d x)
+  (if (= 0 (remainder (+ x 1) 3))
+      (* 2 (/ (+ x 1) 3))
+      1 ))
+
+;; (cont-frac-iter (lambda (x) 1.0)
+;;                 calc-d
+;;                 111)
+
+
+;; (cont-frac (lambda (x) 1.0)
+;;            calc-d
+;;            11)
+
+(define e (+ (cont-frac (lambda (x) 1.0)
+                        calc-d
+                        11)
+             2))
+
+;; 1.39
+(define (tan-cf x k)
+  (define (calc-n i)
+    (if (= 1 i)
+        x
+        (- (square x))))
+  (cont-frac-iter calc-n
+                  (lambda (i) (- (* i 2) 1))
+                  k))
+
+
+;;1.3.4
+
+(define (average-damp f)
+  (lambda (x) (average x (f x))))
+
+;; (define (sqrt x)
+;;   (fixed-point (average-damp (lambda (y) (/ x y)))
+;;                1.0))
+
+(define (cube-root x)
+  (fixed-point (average-damp (lambda (y) (/ x (square y))))
+               1.0))
+
+(define dx 0.00001)
+
+(define (deriv g)
+  (lambda (x)
+    (/ (- (g (+ x dx)) (g x))
+       dx)))
+
+(define (newton-transform g)
+  (lambda (x)
+    (- x (/ (g x) ((deriv g) x)))))
+
+(define (newtons-method g guess)
+  (fixed-point (newton-transform g) guess))
+
+(define (sqrt x)
+  (newtons-method (lambda (y) (- (square y) x))
+                  1.0))
+
+(define (fixed-point-of-transform g transform guess)
+  (fixed-point (transform g) guess))
+
+;; (define (sqrt x)
+;;   (fixed-point-of-transform (lambda (y) (/ x y))
+;;                             average-damp
+;;                             1.0))
+
+;; (define (sqrt x)
+;;   (fixed-point-of-transform (lambda (y) (- (square y) x))
+;;                             newton-transform
+;;                             1.0))
+
+(define (cubic a b c)
+  (lambda (x) (+ (cube x)
+                 (* a (square x))
+                 (* b x)
+                 c)))
